@@ -1,0 +1,58 @@
+.jFolders {
+	display: inline-block;
+
+	> div {
+		display: inline-block;
+		cursor: pointer;
+		background-color: #fff;
+		border: solid 1px #ccc;
+
+		&:after {
+			content: '\00bb';
+			color: #000;
+			padding: 0px 5px;
+			height: inherit;
+		}
+
+		> label {
+			padding: 0px 5px;
+		}
+
+		ul {
+			margin: 0px;
+		}
+
+		li {
+			padding: 2px 5px;
+			margin: 0px;
+		}
+
+		span {
+			margin-left: 5px;
+			display: inline-block;
+			padding: 2px;
+		}
+
+		.selected > label {
+			font-weight: bold;
+		}
+
+		> div {
+			position: absolute;
+			z-index: 10;
+		}
+
+		> div,
+		li > div {
+			display: none;
+			margin: 0px;
+			padding: 2px;
+			background-color: #fff;
+		}
+
+		&.expand > div,
+		li.expand > div {
+			display: block;
+		}
+	}
+}
