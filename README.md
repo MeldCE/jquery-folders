@@ -19,9 +19,6 @@ The following options are available when creating the JQuery folders list:
   the correct format of the array.
 * `ajaxScript` - AJAX URI to retrieve the JSON array containing the file list.
   See List below for the correct format of the JSON array.
-/* Redundant as can tell whether full listing or not (sub true or object)
-* `fullListing` - Set whether the AJAX script returns the full listing or just
-  the current directory listing (default: true).*/
 * `name` - Name for the form element(s) if one is to be created (default: none
   created).
 * `separator` - Directory separator of the server (default: `/`).
@@ -46,6 +43,7 @@ file. The following information on the files must be set:
 * `sub` - If a directory and the directory contains files, sub should be a
   file list ob
 * `type` - Type of file. Can be `'file'` or `'dir'`.
+
 The following information may also be set:
 * `class` - Class to give to the element
 If using functions to handle the selection of files, each object of the files
