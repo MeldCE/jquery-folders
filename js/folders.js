@@ -273,15 +273,20 @@ if(jQuery) (function($){
 					selectLabel: 'Select a folder',
 					multiple: false,
 					create: false,
-					selectedClass: 'selected',
 					separator: '/',
 					collapseSiblings: true,
 					class: 'jFolders'
 				}, options);
 
+				// Set selected class to default if there is none
+				if (!this.options.selectedClass) {
+					this.options.selectedClass = 'selected';
+				}
+
 				this.obj = obj;
 				this.selection = {};
 
+				// Add class if set
 				if (this.options.class) {
 					obj.addClass(this.options.class);
 				}
