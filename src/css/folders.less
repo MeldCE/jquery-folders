@@ -44,15 +44,34 @@
 
 		> div,
 		li > div {
-			display: none;
 			margin: 0px;
 			padding: 2px;
 			background-color: #fff;
 		}
+		
+		> div,
+		li {
+			display: none;
+		}
 
 		&.expand > div,
-		li.expand > div {
+		&.expand > div > ul > li,
+		li.expand > div > ul > li,
+		li.childSelected,
+		li.selected {
 			display: block;
+		}
+
+		li:not(.expand) li:not(.selected):not(.childSelected) {
+			display: none;
+		}
+
+		li.childSelected:not(.expand) {
+			font-style: italic;
+		}
+
+		li.selected {
+			font-style: normal;
 		}
 	}
 }
