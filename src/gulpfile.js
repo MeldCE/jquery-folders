@@ -15,7 +15,7 @@ var shell = require('gulp-shell');
 var package = require('./package.json');
 
 var paths = {
-	build: '../',
+	build: '../dist/',
 	jsSrc: 'js/*.js',
 	cssSrc: 'css/*.less',
 };
