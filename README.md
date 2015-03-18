@@ -17,8 +17,9 @@ The following options are available when creating the JQuery folders list:
 * `create` - Set whether user is able to create new folders (default: false).
 * `files` - A javascript array containing the file list. See List below for
   the correct format of the array.
-* `ajaxScript` - AJAX URI to retrieve the JSON array containing the file list.
-  See List below for the correct format of the JSON array.
+* `ajaxScript` - AJAX URI to handle retrieving the JSON array containing the
+  file list, and creating and deleting new folders. See AJAX Script below
+	for information on what the URI will be passed.
 * `name` - Name for the form element(s) if one is to be created (default: none
   created).
 * `separator` - Directory separator of the server (default: `/`).
@@ -47,4 +48,37 @@ file. The following information on the files must be set:
 The following information may also be set:
 * `class` - Class to give to the element
 If using functions to handle the selection of files, each object of the files
-selected will be passed to the selection function. 
+selected will be passed to the selection function.
+
+## AJAX Script
+The AJAX script set using the `ajaxScript` parameter in the options will be
+called every time a folder creation, deletion and list action is initiated.
+
+### Folder Creation
+Upon a folder creation, the AJAX script will be requested with the following
+POST data:
+* `id` - The id of the folder to create the new folder under
+* `name` - The name of the new folder
+
+The AJAX script should return a JSON response containing an object with either
+an error message e.g. `{"error": "Could not create folder"}` or the id of the
+newly created folder e.g. `{"id":45}`
+
+### Folder Deletion
+Upon a folder deletion, the AJAX script will be requested with the following
+POST data:
+* `id` - The id of the folder to delete
+
+The AJAX script should return a JSON response containing an object with either
+an error message e.g. `{"error": "Could not create folder"}` or a message
+telling of its success  e.g. `{"msg": "New folder created"}`
+
+### Folder Listing
+Upon a folder creation, the AJAX script will be requested with the following
+POST data:
+* `id` - The id of the folder to list the contents of
+
+The AJAX script should return a JSON response containing an object with either
+an error message e.g. `{"error": "Could not create folder"}` or an array
+containing the folder listing. See List below for the correct format of the
+JSON array.

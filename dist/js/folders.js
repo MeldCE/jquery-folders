@@ -1,18 +1,33 @@
 if(jQuery) (function($){
 	$.extend($.fn, {
 		folders: (function() {
-			function rFunc(func, context, appendParams) {
-				var a = Array.prototype.slice.call(arguments);
-				a.splice(0, 3);
-				return function () {
-					if (appendParams) {
-						var b = [].concat(a);
-						b = b.concat(Array.prototype.slice.call(arguments));
-						func.apply(context, b);
-					} else {
-						func.apply(context, a);
+			/**
+			 * To use with array.sort
+			 * arr.sort(function(o1, o2) {
+			 *   return naturalSorter(o1.t, o2.t);
+			 * });
+			 * http://stackoverflow.com/questions/19247495/alphanumeric-sorting-an-array-in-javascript
+			 * http://jsfiddle.net/MikeGrace/Vgavb/
+			 */
+			function naturalSorter(as, bs){
+				var a, b, a1, b1, i= 0, n, L,
+				rx=/(\.\d+)|(\d+(\.\d+)?)|([^\d.]+)|(\.\D+)|(\.$)/g;
+				if(as=== bs) return 0;
+				a= as.toLowerCase().match(rx);
+				b= bs.toLowerCase().match(rx);
+				L= a.length;
+				while(i<L){
+					if(!b[i]) return 1;
+					a1= a[i],
+					b1= b[i++];
+					if(a1!== b1){
+						n= a1-b1;
+						if(!isNaN(n)) return n;
+						return a1>b1? 1:-1;
 					}
-				};
+				}
+
+				return b[i]? -1:0;
 			}
 
 			function receiveList(obj, data, textStatus, jqXHR) {
@@ -49,29 +64,49 @@ if(jQuery) (function($){
 				}
 			}
 
-			function addPart(obj, data, base) {
-				var li, input, label;
+			function addPart(obj, data, base, order) {
+				var li = $('<li data-id="' + data.id + '"></li>'), input, label, link;
 				
-				obj.append((li = $('<li></li>')));
+				if (order) {
+					// Go through current parts and find where to insert the new one
+					var after;
+					obj.children().each(function() {
+						if (naturalSorter($(this).text(), data.label) > 0) { // should be before
+							return false;
+						} else {
+							after = $(this);
+						}
+					});
+					if (!after) {
+						console.log('no after');
+						obj.prepend(li);
+					} else {
+						console.log('after');
+						console.log(after);
+						after.after(li);
+					}
+				} else {
+					obj.append(li);
+				}
+				
 				li.append((label = $('<label>' + data.label + '</label>')));
 				// Create the input if required
 				if (this.options.name) {
 					// @todo input.append('<option value="' + value + '></option>');
 				}
 
-				// Add id to li
-				li.attr('data-id', data.id);
-
 				// Add click (select) functionality
-				li.click(rFunc(select, this, true, li, data));
+				li.click(select.bind(this, li, data));
 
 				data._obj = li;
 
 				//@todo if (data.type == 'dir') {
 					// Add new link if can create new
 					if (this.options.create) {
-						li.append((createLink = $('<a>New</a>')));
-						createLink.click(rFunc(create, this, true, li, data.id));
+						li.append((link = $('<a title="Create a new sub-folder">+</a>')));
+						link.click(createFile.bind(this, li, data.id));
+						li.append((link = $('<a title="Delete folder">-</a>')));
+						link.click(deleteFile.bind(this, li, data.id, data.label));
 					}
 
 					// Add expand button if have subdirectories
@@ -86,9 +121,9 @@ if(jQuery) (function($){
 				obj.addClass('parent');
 
 				// Add expand objnk
-				obj.append((span = $('<span>+</span>')));
+				obj.append((span = $('<span title="Expand Folder">&raquo;</span>')));
 				obj.append((div = $('<div></div>')));
-				span.click(rFunc(expand, this, true, obj));
+				span.click(expand.bind(this, obj));
 
 				// Draw the subdirectories if we have it
 				if (sub !== true) {
@@ -98,7 +133,9 @@ if(jQuery) (function($){
 			}
 
 			function select(obj, file, ev) {
-				ev.stopPropagation();
+				if (ev.isDefaultPrevented()) return;
+				ev.preventDefault();
+				
 				var selected = false;
 
 				if (this.selection[file.id]) { // Was selected
@@ -173,7 +210,8 @@ if(jQuery) (function($){
 						this.mainLabel.text(this.options.selectLabel);
 						break;
 					case 1:
-						this.mainLabel.text(this.selection[s].label + ' selected');
+						this.mainLabel.text(this.selection[s].label
+								+ (this.options.multiple ? ' selected' : ''));
 						break;
 					default:
 						this.mainLabel.text(i + ' folders selected');
@@ -189,14 +227,16 @@ if(jQuery) (function($){
 				}
 			}
 
-			function create(obj, id, ev) {
-				ev.stopPropagation();
+			function createFile(obj, id, ev) {
+				if (ev.isDefaultPrevented()) return;
+				ev.preventDefault();
+
 				var name;
 				if ((name = prompt('Please enter a name for the new folder'))) {
 					var data = {a: 'create', name: name}
 					if (id) data.id = id;
 					$.post(this.options.ajaxScript, data,
-							rFunc(finishCreate, this, true, obj, name));
+							finishCreate.bind(this, obj, name));
 				}
 			}
 
@@ -211,12 +251,44 @@ if(jQuery) (function($){
 				// Check if item has children already
 				if (!obj.hasClass('parent')) {
 					// Add parts so it can be expanded
-					if (obj.attr('data-id')) {
-						addSubParts(obj, true);
-					}
+					// @todo Delete? if (obj.attr('data-id')) {
+						addSubParts.apply(this, [obj, true]);
+					//}
 				}
+				addPart.apply(this, [obj.children('div').children('ul'),
+						{ label: name, id: data.id }, null, true]);
 				// Expand menu
-				expand(obj, null, true, [{ label: name, id: data.id }]);
+				expand.apply(this, [obj, null, true]);
+				//expand(obj, null, true, [{ label: name, id: data.id }]);
+			}
+
+			function deleteFile(obj, id, label, ev) {
+				if (ev.isDefaultPrevented()) return;
+				ev.preventDefault();
+
+				var name;
+				if ((name = confirm('Are you sure you want to delete the ' + label
+						+ ' folder? All files and folders within this folder will be '
+						+ 'deleted.'))) {
+					var data = {a: 'delete', id: id}
+					$.post(this.options.ajaxScript, data,
+							finishDelete.bind(this, obj));
+				}
+			}
+
+			function finishDelete(obj, data, textStatus, jqXHR) {
+				// Alert an error
+				if (data.error) {
+					alert(data.error);
+					return;
+				}
+
+				if (data.msg) {
+					alert(data.msg);
+				}
+
+				// Remove object
+				obj.remove();
 			}
 
 			/**
@@ -224,18 +296,18 @@ if(jQuery) (function($){
 			 */
 			function expand(obj, ev, force, files) {
 				if (ev) {
-					ev.stopPropagation();
+					if (ev.isDefaultPrevented()) return;
+					ev.preventDefault();
 				}
-
 				
 				if (obj.hasClass('expand') && force !== true) {
 					obj.removeClass('expand');
-					obj.children('span').html('+');
+					obj.children('span').html('&raquo;');
 				} else if (force !== false) {
-					obj.children('span').html('-');
+					obj.children('span').html('&laquo;');
 					if (this.options.collapseSiblings) {
 						obj.siblings('li').removeClass('expand');
-						obj.siblings('li').children('span').html('+');
+						obj.siblings('li').children('span').html('&raquo;');
 					}
 					obj.addClass('expand');
 				
@@ -251,7 +323,7 @@ if(jQuery) (function($){
 							// Send AJAX request
 							//console.log('sending request to ' + this.options.ajaxScript);
 							$.post(this.options.ajaxScript, {id: obj.attr('data-id')},
-									rFunc(receiveList, this, true, obj));
+									receiveList.bind(this, obj));
 						} else {
 							// Disable
 							return;
@@ -306,14 +378,14 @@ if(jQuery) (function($){
 				// Add new folder link
 				if (this.options.create) {
 					this.obj.append((createLink = $('<a>New</a>')
-							.click(rFunc(create,this, true, this.div, null))));
+							.click(createFile.bind(this, this.div, null))));
 				}
 
 				// Create the div that will contain either the loadingLabel or the
 				// file list
 				this.div.append(($('<div></div>')));
 
-				this.div.click(rFunc(expand, this, true, this.div));
+				this.div.click(expand.bind(this, this.div));
 
 				// Build what we have if we have something
 				if (this.options.files) {
@@ -321,7 +393,7 @@ if(jQuery) (function($){
 				}
 				
 				// Add hook onto document to close if user clicks somewhere else
-				$(document).on('click', rFunc(closeOut, this, true));
+				$(document).on('click', closeOut.bind(this));
 			}
 
 			return function(options, files) {
